@@ -69,7 +69,6 @@ split_childs(#node{leaf=true}, _SplitIndex) ->
 %% Test cases
 %%
 %% TODO
-%% - test with parent which has keys already
 
 test_is_full() ->
     F=#node{keys=[a,b,c]},
