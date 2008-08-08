@@ -1,13 +1,16 @@
+require 'rubygems'
+require 'open4'
 require 'rake/clean'
+
+include Open4
 
 SRC = FileList['src/*.erl']
 
 OBJDIR = 'ebin'
 TMPDIR = "tmp"
 
-OBJ = SRC.map { |filename| File.join(OBJDIR, File.basename(filename).ext('beam')) }
-COV = SRC.map { |filename| File.join(COVERDIR, File.basename(filename).ext('beam')) }
-CLEAN.include(OBJ, OBJDIR, TMPDIR, COVERDIR)
+OBJ =  SRC.map { |filename| File.join(OBJDIR, File.basename(filename).ext('beam')) }
+CLEAN.include(OBJ, OBJDIR, TMPDIR)
 
 directory TMPDIR
 
@@ -15,29 +18,51 @@ directory OBJDIR
 
 task :default => [:build]
 
-task :build => [:eunit, LOGDIR] + OBJ
+task :build => OBJ
+
+if ENV["DEBUG"] != ""
+  puts "Compiling with debug_info (used for coverage as well)"
+  debug_flag = "+debug_info"
+else 
+  debug_info = ""
+end
 
 rule '.beam' => lambda{ |beamfile| find_source(beamfile) } do |t|
   if t.name =~ /^ebin/
     Task[OBJDIR].invoke
-    sh "erlc -pa 'vendor/eunit/ebin' -o ebin -W #{t.source}"
-  elsif t.name =~ /^cover/
-    cover[COVERDIR].invoke
-    sh "erlc -pa 'vendor/eunit/ebin' -o cover -W +debug_info #{t.source}"
+    sh "erlc -o #{OBJDIR} #{debug_flag} -W #{t.source}"
+  else
+    raise("Don't know how to build '#{t.name}'")
   end
+end
+
+task :test => OBJ do
+  test(OBJ)
 end
 
 # helper methods
 
-def eunit(mods)
-  cmd = "erl -noshell -pa 'vendor/eunit/ebin' -pa ./ebin " + mods.map { |mod| "-s #{mod} test " }.join + "-s init stop"
+def plines(buffer, prefix="  *")
+  prefix ||= ""
+  buffer.lines.each do |line|
+    puts prefix + " " + line
+  end
+end
+
+def test(mods)
+  cmd = "erl -noshell -pa ./ebin " + mods.map { |mod| "-s #{File.basename(mod, ".beam")} test " }.join + "-s init stop"
   puts cmd
-  test_output = `#{cmd}`  
-  if /\*failed\*/ =~ test_output
-    puts test_output
-    raise "Tests failed"
-  else
-    puts test_output
+  popen4(cmd) do |pid, stdin, stdout, stderr|
+    out = stdout.read 
+    err = stderr.read
+    if /badmatch/ =~ out
+      plines(out)
+#      plines(err, " **")
+      abort "[Tests failed]"
+    else
+      plines(out)
+      plines(err, " **")
+    end
   end
 end
 
