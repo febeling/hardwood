@@ -27,7 +27,7 @@ is_full(Node, T) ->
 
 median_index(List) ->
     Length = length(List),
-    round(Length / 2) - 1.
+    round(Length / 2).
 
 %% {Index, UpdatedL} = insert_sorted(List, Value)
 insert_sorted(L, V) ->
@@ -39,13 +39,17 @@ insert_sorted(L, V) ->
 %% PNode = split(PNode, CNode, T)
 split(P, C, T) ->
     true = is_full(C, T),
-    Keys = C#node.keys,
-    M = median_index(Keys),
-    {LowerKeys, [MoveUpKey|UpperKeys]} = lists:split(M, Keys),
+    M = median_index(C#node.keys),
+    %% find key to up-move, split keys
+    {LowerKeys, [MoveUpKey|UpperKeys]} = lists:split(M-1, C#node.keys),
 
+    %% insert moved-up keys in parent, remember it's index
     {NewPKeyIndex, UpdatedPKeys} = insert_sorted(P#node.keys, MoveUpKey),
     case split_childs(P, NewPKeyIndex - 1) of
+	%% new, empty parent node (root)
 	{LowerParentChilds=[], UpperParentChilds=[]} -> ok;
+	%% update parent node: remove to split node as child before replace
+	%% with 2 new ones
 	{LowerParentChilds, [_Skip|UpperParentChilds]} -> ok
     end,
     
@@ -53,10 +57,14 @@ split(P, C, T) ->
     {LowerChilds, UpperChilds} = split_childs(C, SplitIndex),
     UpperC = C#node{keys=UpperKeys, childs=UpperChilds},
     LowerC = C#node{keys=LowerKeys, childs=LowerChilds},
-    UpdatedP = P#node{keys=UpdatedPKeys, childs=lists:append([LowerParentChilds, [LowerC, UpperC], UpperParentChilds]), leaf=false},
+    UpdatedP = P#node{keys=UpdatedPKeys, 
+		      childs=lists:append([LowerParentChilds, 
+					   [LowerC, UpperC], 
+					   UpperParentChilds]), 
+		      leaf=false},
     {UpdatedP, LowerC, UpperC}.
 
-split_childs(#node{leaf=false, childs=Childs}=Node, SplitIndex) ->
+split_childs(#node{leaf=false, childs=Childs}=_Node, SplitIndex) ->
     LowerChilds = lists:sublist(Childs, SplitIndex + 1),
     UpperChilds = lists:sublist(Childs, 
 				SplitIndex + 2, 
@@ -138,10 +146,10 @@ test_split_node() ->
     ok.
 
 test_median_index() ->
-    1 = median_index([1,    2  ,3,4]),
-    1 = median_index([1,    2  ,3]),
-    2 = median_index([1,2,  3  ,4,5]),
-    2 = median_index([1,2,  3  ,4,5,6]),
+    2 = median_index([1,    2  ,3,4]),
+    2 = median_index([1,    2  ,3]),
+    3 = median_index([1,2,  3  ,4,5]),
+    3 = median_index([1,2,  3  ,4,5,6]),
     ok.
 
 test() ->
