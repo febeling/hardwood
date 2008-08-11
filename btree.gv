@@ -1,0 +1,12 @@
+digraph structs {
+    node [shape=record];
+    struct1 [label="<f0> C|<f1> H|<f2> L"];
+    struct2 [label="<f0> A|<f1> B"];
+    struct3 [label="D | E | F"];
+    struct4 [label="I | J | K"];
+    struct5 [label="M | N | O"];
+    struct1:f0:sw -> struct2:n;
+    struct1:f0:se -> struct3:n;
+    struct1:f1:se -> struct4:n;
+    struct1:f2:se -> struct5:n;
+}
