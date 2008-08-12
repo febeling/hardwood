@@ -5,10 +5,22 @@
 -include("hardwood.hrl").
 
 %% Tree operations
+
 %% TODO
-%% Tree = insert(Tree, Key, Value)
 %% Value = lookup(Tree, Key)
 %% Tree = delete(Tree, Key)
+
+%% Tree = insert(Tree, Key, Value)
+insert(Tree, Key) ->
+    NewTree = case is_full(Tree#btree.root, Tree#btree.t) of
+		  true ->
+		      NewRoot = split(#node{}, Tree#btree.root, Tree#btree.t),
+		      Tree#btree{root=NewRoot};
+		  false ->
+		      Tree
+	      end,
+    insert_nonfull(NewTree#btree.root, Key, NewTree#btree.t),
+    NewTree.
 
 %% Tree = create(T)
 create() ->
@@ -17,17 +29,51 @@ create(T) ->
     #btree{t=T}.
 
 %% Node operations
-%% TODO
-%% Node = insert_nonfull(Node, Key)
+
+%% {Nodes, Edges} = render_dipgraph(Node, T)
+
+%% Node = insert_nonfull(Node, Key, T)
+insert_nonfull(Node, Key, T) ->
+    false = is_full(Node, T),
+    case Node#node.leaf of
+	true ->
+	    Keys = Node#node.keys,
+	    {_Index, NewKeys} = insert_sorted(Keys, Key),
+	    Node#node{keys=NewKeys};
+	false ->
+	    Index = child_insert_index(Node#node.keys, Key),
+	    InsertChild = lists:nth(Index, Node#node.childs),
+	    case is_full(InsertChild, T) of
+		true ->
+		    NewNode = split(Node, InsertChild, T),
+		    insert_nonfull(NewNode, Key, T);
+		false ->
+		    insert_nonfull(InsertChild, Key, T)
+	    end
+    end.
+
+child_insert_index(Keys, Key) ->
+    child_insert_index(Keys, Key, 1).
+
+child_insert_index([], _Key, Index) ->
+    Index;
+child_insert_index(Keys, Key, Index) ->
+    [H|T] = Keys,
+    case Key =< H of
+	true ->
+	    Index;
+	false ->
+	    child_insert_index(T, Key, Index + 1)
+    end.
+
+median_index(List) ->
+    Length = length(List),
+    round(Length / 2).
 
 %% bool() = is_full(Node, T)
 is_full(Node, T) ->
     #node{keys = Keys} = Node,
     length(Keys) == 2 * T - 1.
-
-median_index(List) ->
-    Length = length(List),
-    round(Length / 2).
 
 %% {Index, UpdatedL} = insert_sorted(List, Value)
 insert_sorted(L, V) ->
@@ -77,6 +123,35 @@ split_childs(#node{leaf=true}, _SplitIndex) ->
 %% Test cases
 %%
 %% TODO
+%% insert into non-leaf node (only for extern insert)
+%% find child to insert into
+
+%% helpers
+
+make_child(N) ->
+    #node{keys=[N, N+1], leaf=true}.
+make_child_with(Keys) ->
+    #node{keys=Keys, leaf=true}.
+
+%% test cases
+
+test_child_insert_index() ->
+    4 = child_insert_index([2, 4, 6], 7),
+    3 = child_insert_index([2, 4, 6], 5),
+    2 = child_insert_index([2, 4, 6], 3),
+    1 = child_insert_index([2, 4, 6], 1),
+    ok.
+
+test_insert_into_node_nonfull() ->
+    T = 2,
+    %% main success case
+    NonFullNode = make_child(7),
+    UpdatedNode = insert_nonfull(NonFullNode, 9, T),
+    #node{keys=[7,8,9], leaf=true} = UpdatedNode,
+    %% insert provoking error
+    FullNode = make_child_with([4, 5, 6]),
+    {'EXIT', {{badmatch,true}, _}} = (catch insert_nonfull(FullNode, 9, T)),
+    ok.
 
 test_is_full() ->
     F=#node{keys=[a,b,c]},
@@ -90,15 +165,9 @@ test_split() ->
     ok = test_split_leaf(),
     ok = test_split_node(),
     ok = test_split_under_nonempty_parent(),
+    ok = test_insert_into_node_nonfull(),
     ok.
 
-%%       [3       8]
-%% [1 2]   [4 5 7]   [9 10]
-%%
-%% Split to insert 6:
-%%
-%%       [3   5     8]
-%% [1 2]   [4] [7]   [9 10]
 test_split_under_nonempty_parent() ->
     T = 2,
     P = #node{keys=[3, 8], childs=[C1=make_child(1), C2=make_child_with([4, 5, 7]), C3=make_child(9)], leaf=false},
@@ -124,13 +193,6 @@ test_split_leaf() ->
     {node, [f], [], true} = UpperChild,
     ok.
 
-make_child(N) ->
-    #node{keys=[N, N+1], leaf=true}.
-make_child_with(Keys) ->
-    #node{keys=Keys, leaf=true}.
-
-%%     3     6     9
-%% 1 2   4 5   7 8   10 11
 test_split_node() ->
     T = 2,
     Grandchilds = [G1=make_child(1), G2=make_child(4), G3=make_child(7), G4=make_child(10)],
@@ -158,4 +220,5 @@ test() ->
     ok = test_split(),
     ok = test_is_full(),
     ok = test_median_index(),
+    ok = test_child_insert_index(),
     ok.
