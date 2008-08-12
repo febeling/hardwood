@@ -30,7 +30,15 @@ create(T) ->
 
 %% Node operations
 
-%% {Nodes, Edges} = render_dipgraph(Node, T)
+%% {Nodes, Edges} = render_digraph(Node, T)
+render_digraph(Node) ->
+    render_digraph("root_node", Node, [], []).
+
+render_digraph(NodeName, Node, KeyStringsAcc, EdgesStringAcc) ->
+    RenderKeyFn = fun(Key) -> io_lib:format("", [Key]) end,
+    lists:append(KeyStringsAcc, lists:map(RenderKeyFn, Node#node.keys)),
+    
+
 
 %% Node = insert_nonfull(Node, Key, T)
 insert_nonfull(Node, Key, T) ->
