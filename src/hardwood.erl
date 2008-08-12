@@ -34,10 +34,12 @@ create(T) ->
 render_digraph(Node) ->
     render_digraph("root_node", Node, [], []).
 
-render_digraph(NodeName, Node, KeyStringsAcc, EdgesStringAcc) ->
-    RenderKeyFn = fun(Key) -> io_lib:format("", [Key]) end,
-    lists:append(KeyStringsAcc, lists:map(RenderKeyFn, Node#node.keys)),
-    
+render_digraph(NodeID, Node, KeyStringsAcc, EdgesStringAcc) ->
+    RenderKeyFn = fun(Key) -> io_lib:format("struct", [Key]) end,
+    NewKeyStringsAcc = lists:append(KeyStringsAcc, lists:map(RenderKeyFn, Node#node.keys)),
+    RenderEdgesFn = fun(Child
+    NewEdgesStringAcc = lists:append(EdgesStringAcc, lists:map(RenderEdgesFn, Node#node.keys)),
+    case Node
 
 
 %% Node = insert_nonfull(Node, Key, T)
