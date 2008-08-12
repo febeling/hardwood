@@ -1,0 +1,25 @@
+
+
+     C     G     M
+ AB    DEF   HIL   NOP
+
+
+       
+
+     C  K
+   [] [] []
+
+Split Node
+  find median key
+  move median key to parent
+  remove node as child from parent
+  create 2 new nodes
+    move keys to 2 new nodes (upper, lower)
+    move childs to 2 new nodes (upper, lower)
+  insert 2 new nodes as childs into parent
+
+Number of childs = Number Keys + 1
+
+New parent key: 2          [1, 2*, 3]
+New parent childs: 2, 3  [1, 2*, 3*, 4]
+
