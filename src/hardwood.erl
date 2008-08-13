@@ -4,6 +4,16 @@
 
 -include("hardwood.hrl").
 
+%% Utilities
+
+%% Fun = fun(A, Index) -> B
+map_with_index(Fun, List) ->
+    IncrFun = fun(A, Index) ->
+		      {Fun(A, Index), Index + 1}
+	      end,
+    {ListM, _Acc} = lists:mapfoldl(IncrFun, 1, List),
+    ListM.
+
 %% Tree operations
 
 %% TODO
@@ -30,14 +40,15 @@ create(T) ->
 
 %% Node operations
 
-%% {Nodes, Edges} = render_digraph(Node, T)
-render_digraph(Node) ->
+{Nodes, Edges} = render_digraph(Node, T)
+render_digraph(Tree) ->
+    Node = Tree#btree.root,
     render_digraph("root_node", Node, [], []).
 
 render_digraph(NodeID, Node, KeyStringsAcc, EdgesStringAcc) ->
     RenderKeyFn = fun(Key) -> io_lib:format("struct", [Key]) end,
     NewKeyStringsAcc = lists:append(KeyStringsAcc, lists:map(RenderKeyFn, Node#node.keys)),
-    RenderEdgesFn = fun(Child
+    RenderEdgesFn = fun(Childs) -> 
     NewEdgesStringAcc = lists:append(EdgesStringAcc, lists:map(RenderEdgesFn, Node#node.keys)),
     case Node
 
@@ -175,7 +186,6 @@ test_split() ->
     ok = test_split_leaf(),
     ok = test_split_node(),
     ok = test_split_under_nonempty_parent(),
-    ok = test_insert_into_node_nonfull(),
     ok.
 
 test_split_under_nonempty_parent() ->
@@ -224,6 +234,12 @@ test_median_index() ->
     3 = median_index([1,2,  3  ,4,5,6]),
     ok.
 
+test_map_with_index() ->
+    Fn = fun(A, Index) -> A * 2 + Index end,
+    L = [0, 1, 2, 3],
+    [1, 4, 7, 10] = map_with_index(Fn, L),
+    ok.
+
 test() ->
     {btree, _, 2} = create(),
     {btree, _, 3} = create(3),
@@ -231,4 +247,6 @@ test() ->
     ok = test_is_full(),
     ok = test_median_index(),
     ok = test_child_insert_index(),
+    ok = test_insert_into_node_nonfull(),
+    ok = test_map_with_index(),
     ok.

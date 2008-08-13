@@ -23,3 +23,33 @@ Number of childs = Number Keys + 1
 New parent key: 2          [1, 2*, 3]
 New parent childs: 2, 3  [1, 2*, 3*, 4]
 
+
+
+to_gv(Node) -> 
+     KeyToLabelF = "
+     Labels = map(KeyToLabelF, Keys)
+"struct~p [label="~p"]", [NodeIndex, ]
+
+to_label(Keys) ->
+  
+--------------------------------------------------
+	
+   
+render_node(Node) -> node + render(Keys)
+render_keys(Keys) -> [label="$"]
+
+%% {NodeStrings, EdgeStrings} =
+render_rec(Node, NodeID, NodeStrings, EdgeStrings, NodeCount)
+  render_node(Node)
+  render_keys(Node#node.keys)
+  if !node.leaf
+
+    Node#node.childs
+    NodeCountSeq = lists:seq(NodeCount + 1, NodeCount + length(Node#node.childs)),
+    ChildNodeIDs = lists:map(fun(N) -> io_lib:format("struct~p", [N]) end, NodeCountSeq),
+
+    Acc = {NodeStrings, EdgeStrings, NodeCount}
+
+    mapfoldl(render_rec, )
+  end 
+      
