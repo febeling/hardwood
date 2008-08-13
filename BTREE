@@ -35,21 +35,21 @@ to_label(Keys) ->
 --------------------------------------------------
 	
    
-render_node(Node) -> node + render(Keys)
-render_keys(Keys) -> [label="$"]
+render_node(Node, SeqNum)
+render_keys(Keys)
 
 %% {NodeStrings, EdgeStrings} =
-render_rec(Node, NodeID, NodeStrings, EdgeStrings, NodeCount)
-  render_node(Node)
-  render_keys(Node#node.keys)
-  if !node.leaf
+render_childs(Node, NodeID, NodeStrings, EdgeStrings, NodeCount)
+  NodeStringsM = [render_node(Node, NodeCount), "\n" | NodeStrings],
 
-    Node#node.childs
-    NodeCountSeq = lists:seq(NodeCount + 1, NodeCount + length(Node#node.childs)),
-    ChildNodeIDs = lists:map(fun(N) -> io_lib:format("struct~p", [N]) end, NodeCountSeq),
+  EdgeStringsM = [render_edges(Node, NodeCount), "\n" | EdgeStrings],
 
-    Acc = {NodeStrings, EdgeStrings, NodeCount}
 
-    mapfoldl(render_rec, )
-  end 
+render_childs(#node{leaf=false}=Node, ParentNodeCount) ->
+  Node#node.childs
+  NodeCountSeq = lists:seq(NodeCount + 1, NodeCount + length(Node#node.childs)),
+  ChildNodeIDs = lists:map(fun(N) -> io_lib:format("struct~p", [N]) end, NodeCountSeq),
+  Acc = {NodeStrings, EdgeStrings, NodeCount}
+  mapfoldl(render_rec, )
+
       

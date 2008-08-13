@@ -2,6 +2,8 @@
 
 -compile([export_all]).
 
+-import(lists, [map/2, seq/2, seq/3]).
+
 -include("hardwood.hrl").
 
 %% Utilities
@@ -40,18 +42,51 @@ create(T) ->
 
 %% Node operations
 
-{Nodes, Edges} = render_digraph(Node, T)
-render_digraph(Tree) ->
-    Node = Tree#btree.root,
-    render_digraph("root_node", Node, [], []).
+%%{Nodes, Edges} = render_digraph(Node, T)
+%% render_digraph(Tree) ->
+%%     Node = Tree#btree.root,
+%%     render_digraph("root_node", Node, [], []).
 
-render_digraph(NodeID, Node, KeyStringsAcc, EdgesStringAcc) ->
-    RenderKeyFn = fun(Key) -> io_lib:format("struct", [Key]) end,
-    NewKeyStringsAcc = lists:append(KeyStringsAcc, lists:map(RenderKeyFn, Node#node.keys)),
-    RenderEdgesFn = fun(Childs) -> 
-    NewEdgesStringAcc = lists:append(EdgesStringAcc, lists:map(RenderEdgesFn, Node#node.keys)),
-    case Node
+%%   % Name       = node_name(Node, SeqNum),
 
+
+%% render_digraph(Node, NodeName, SeqNum, NodesStringsAcc, EdgesStringsAcc) ->
+%%     % NodeString     = render_node(NodeName, Node),
+%%     % SeqNums        = seq(SeqNum + 1, SeqNum + length(Node#node.childs)),
+%%     % ChildNodeNames = map(fun node_name/2, Node#node.childs, SeqNums),
+%%     % {LastSeqNum, NodesStringsAccM, EdgesStringsAccM} = render_digraph(),
+
+%% apply_render_digraph(ChildNode, {LastSeqNum, NodeLines, EdgeLines}=_Acc) ->
+    
+
+
+%% Join strings in a list together with a given other string
+%% join([string()], string()) -> iolist()
+join(Strings, Separator) ->
+    join(Strings, Separator, []).
+join([H | T], Sep, []) ->
+    join(T, Sep, [H]);
+join([H | T], Sep, Acc) ->
+    join(T, Sep, [H, Sep | Acc]);
+join([], _Sep, Acc) ->
+    lists:reverse(Acc).
+
+%%render_edges(Node, 
+%%render_edges(NodeName, ChildNodeNames) ->
+    
+
+render_node(NodeName, Node) ->
+    io_lib:format("~s ~s", [NodeName, render_keys(Node#node.keys)]).
+
+%% node_name(Node, Counter)
+node_name(_Node, SeqNum) ->
+    io_lib:format("struct~B", [SeqNum]).
+
+%% render_keys(Keys) -> string()
+render_keys(Keys) ->
+    Fn = fun(Key, Index) -> io_lib:format("<f~p> ~p", [Index, Key]) end,
+    Label = join(map_with_index(Fn, Keys), "|"),
+    io_lib:format("[label=\"~s\"]", [Label]).
 
 %% Node = insert_nonfull(Node, Key, T)
 insert_nonfull(Node, Key, T) ->
