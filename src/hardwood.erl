@@ -3,18 +3,9 @@
 -compile([export_all]).
 
 -import(lists, [map/2, seq/2, seq/3]).
+-import(utils, [map_with_index/2]).
 
 -include("hardwood.hrl").
-
-%% Utilities
-
-%% Fun = fun(A, Index) -> B
-map_with_index(Fun, List) ->
-    IncrFun = fun(A, Index) ->
-		      {Fun(A, Index), Index + 1}
-	      end,
-    {ListM, _Acc} = lists:mapfoldl(IncrFun, 1, List),
-    ListM.
 
 %% Tree operations
 
@@ -41,52 +32,6 @@ create(T) ->
     #btree{t=T}.
 
 %% Node operations
-
-%%{Nodes, Edges} = render_digraph(Node, T)
-%% render_digraph(Tree) ->
-%%     Node = Tree#btree.root,
-%%     render_digraph("root_node", Node, [], []).
-
-%%   % Name       = node_name(Node, SeqNum),
-
-
-%% render_digraph(Node, NodeName, SeqNum, NodesStringsAcc, EdgesStringsAcc) ->
-%%     % NodeString     = render_node(NodeName, Node),
-%%     % SeqNums        = seq(SeqNum + 1, SeqNum + length(Node#node.childs)),
-%%     % ChildNodeNames = map(fun node_name/2, Node#node.childs, SeqNums),
-%%     % {LastSeqNum, NodesStringsAccM, EdgesStringsAccM} = render_digraph(),
-
-%% apply_render_digraph(ChildNode, {LastSeqNum, NodeLines, EdgeLines}=_Acc) ->
-    
-
-
-%% Join strings in a list together with a given other string
-%% join([string()], string()) -> iolist()
-join(Strings, Separator) ->
-    join(Strings, Separator, []).
-join([H | T], Sep, []) ->
-    join(T, Sep, [H]);
-join([H | T], Sep, Acc) ->
-    join(T, Sep, [H, Sep | Acc]);
-join([], _Sep, Acc) ->
-    lists:reverse(Acc).
-
-%%render_edges(Node, 
-%%render_edges(NodeName, ChildNodeNames) ->
-    
-
-render_node(NodeName, Node) ->
-    io_lib:format("~s ~s", [NodeName, render_keys(Node#node.keys)]).
-
-%% node_name(Node, Counter)
-node_name(_Node, SeqNum) ->
-    io_lib:format("struct~B", [SeqNum]).
-
-%% render_keys(Keys) -> string()
-render_keys(Keys) ->
-    Fn = fun(Key, Index) -> io_lib:format("<f~p> ~p", [Index, Key]) end,
-    Label = join(map_with_index(Fn, Keys), "|"),
-    io_lib:format("[label=\"~s\"]", [Label]).
 
 %% Node = insert_nonfull(Node, Key, T)
 insert_nonfull(Node, Key, T) ->
