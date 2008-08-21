@@ -134,7 +134,26 @@ make_child(N) ->
 make_child_with(Keys) ->
     #node{keys=Keys, leaf=true}.
 
+make_subtree() ->
+    #node{keys=[3, 8, 10], 
+	  childs=[make_child(1), 
+		  make_child_with([4, 5, 7]), 
+		  make_child(9), 
+		  #node{keys=[11,12], leaf=false, childs=make_child(200)}], 
+	  leaf=false}.
+
+make_tree() ->
+    #btree{root=make_subtree()}.
+
 %% test cases
+
+t() -> %% manual test, remove later
+    {Nodes, _Edges, SeqNum} = hardwood_render:render_digraph(make_tree()),
+    io:fwrite("Nodes~n", []),
+    utils:puts(Nodes),
+%%     io:fwrite("Edges~n", []),
+%%     utils:puts(Edges),
+    io:fwrite("SeqNum: ~p~n", [SeqNum]).
 
 test_child_insert_index() ->
     4 = child_insert_index([2, 4, 6], 7),
