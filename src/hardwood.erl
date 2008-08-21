@@ -129,26 +129,60 @@ split_childs(#node{leaf=true}, _SplitIndex) ->
 
 %% helpers
 
-make_child(N) ->
-    #node{keys=[N, N+1], leaf=true}.
-make_child_with(Keys) ->
+make_node(N) when is_integer(N) ->
+    #node{keys=[N, N+1], leaf=true};
+make_node(Keys) when is_list(Keys) ->
     #node{keys=Keys, leaf=true}.
 
 make_subtree() ->
     #node{keys=[3, 8, 10], 
-	  childs=[make_child(1), 
-		  make_child_with([4, 5, 7]), 
-		  make_child(9), 
-		  #node{keys=[11,12], leaf=false, childs=make_child(200)}], 
+	  childs=[make_node(1), 
+		  make_node([4, 5, 7]), 
+		  make_node(9), 
+		  #node{keys=[11,12], leaf=false, childs=make_node(200)}], 
 	  leaf=false}.
 
+%%                                        16       
+%%       4       8         12                          20          24            28
+%% 1.2.3   5.6.7   9.10.11    13.14.15        17.18.19    21.22.23     25.26.27      29.30.31
+make_subtree1() ->
+    C1 = [make_node([1,2,3]),
+	  make_node([5,6,7]),
+	  make_node([9,10,11]),
+	  make_node([13,14,15])],
+    C2 = [make_node([17,18,19]),
+	  make_node([21,22,23]),
+	  make_node([25,26,27]),
+	  make_node([29,30,31])],
+    P1 = #node{leaf=false, 
+	       keys=[4,8,12],
+	       childs=C1},
+    P2 = #node{leaf=false,
+	       keys=[20,24,28],
+	       childs=C2},
+    G = #node{leaf=false,
+	      keys=[16],
+	      childs=[P1,P2]},
+    make_tree(G).
+
 make_tree() ->
-    #btree{root=make_subtree()}.
+    make_tree(make_subtree()).
+
+make_tree(Node) ->
+    #btree{root=Node}.
 
 %% test cases
 
 t() -> %% manual test, remove later
     {Nodes, _Edges, SeqNum} = hardwood_render:render_digraph(make_tree()),
+    io:fwrite("Nodes~n", []),
+    utils:puts(Nodes),
+%%     io:fwrite("Edges~n", []),
+%%     utils:puts(Edges),
+    io:fwrite("SeqNum: ~p~n", [SeqNum]).
+
+t1() -> %% manual test, remove later
+    {Nodes, _Edges, SeqNum} = hardwood_render:render_digraph(make_tree(make_subtree1())),
     io:fwrite("Nodes~n", []),
     utils:puts(Nodes),
 %%     io:fwrite("Edges~n", []),
@@ -165,11 +199,11 @@ test_child_insert_index() ->
 test_insert_into_node_nonfull() ->
     T = 2,
     %% main success case
-    NonFullNode = make_child(7),
+    NonFullNode = make_node(7),
     UpdatedNode = insert_nonfull(NonFullNode, 9, T),
     #node{keys=[7,8,9], leaf=true} = UpdatedNode,
     %% insert provoking error
-    FullNode = make_child_with([4, 5, 6]),
+    FullNode = make_node([4, 5, 6]),
     {'EXIT', {{badmatch,true}, _}} = (catch insert_nonfull(FullNode, 9, T)),
     ok.
 
@@ -189,7 +223,7 @@ test_split() ->
 
 test_split_under_nonempty_parent() ->
     T = 2,
-    P = #node{keys=[3, 8], childs=[C1=make_child(1), C2=make_child_with([4, 5, 7]), C3=make_child(9)], leaf=false},
+    P = #node{keys=[3, 8], childs=[C1=make_node(1), C2=make_node([4, 5, 7]), C3=make_node(9)], leaf=false},
     #node{keys=[1, 2], leaf=true}=C1,
     #node{keys=[4, 5, 7], leaf=true}=C2,
     #node{keys=[9, 10], leaf=true}=C3,
@@ -214,7 +248,7 @@ test_split_leaf() ->
 
 test_split_node() ->
     T = 2,
-    Grandchilds = [G1=make_child(1), G2=make_child(4), G3=make_child(7), G4=make_child(10)],
+    Grandchilds = [G1=make_node(1), G2=make_node(4), G3=make_node(7), G4=make_node(10)],
     C = #node{keys=[3, 6, 9], leaf=false, childs=Grandchilds},
     P = #node{keys=[], leaf=true},
     {P1, LowerChild, UpperChild} = split(P, C, T),
