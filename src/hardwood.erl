@@ -120,7 +120,6 @@ split_childs(#node{leaf=false, childs=Childs}=_Node, SplitIndex) ->
 split_childs(#node{leaf=true}, _SplitIndex) ->
     {[], []}.
 
-
 %% Test cases
 %%
 %% TODO
@@ -145,7 +144,7 @@ make_subtree() ->
 %%                                        16       
 %%       4       8         12                          20          24            28
 %% 1.2.3   5.6.7   9.10.11    13.14.15        17.18.19    21.22.23     25.26.27      29.30.31
-make_subtree1() ->
+make_tree1() ->
     C1 = [make_node([1,2,3]),
 	  make_node([5,6,7]),
 	  make_node([9,10,11]),
@@ -173,20 +172,12 @@ make_tree(Node) ->
 
 %% test cases
 
-t() -> %% manual test, remove later
-    {Nodes, _Edges, SeqNum} = hardwood_render:render_digraph(make_tree()),
+t1() -> %% manual test, TODO remove later
+    {Nodes, Edges, SeqNum} = hardwood_render:render_digraph(make_tree1()),
     io:fwrite("Nodes~n", []),
     utils:puts(Nodes),
-%%     io:fwrite("Edges~n", []),
-%%     utils:puts(Edges),
-    io:fwrite("SeqNum: ~p~n", [SeqNum]).
-
-t1() -> %% manual test, remove later
-    {Nodes, _Edges, SeqNum} = hardwood_render:render_digraph(make_tree(make_subtree1())),
-    io:fwrite("Nodes~n", []),
-    utils:puts(Nodes),
-%%     io:fwrite("Edges~n", []),
-%%     utils:puts(Edges),
+    io:fwrite("Edges~n", []),
+    utils:puts(Edges),
     io:fwrite("SeqNum: ~p~n", [SeqNum]).
 
 test_child_insert_index() ->

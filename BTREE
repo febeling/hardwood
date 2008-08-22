@@ -1,4 +1,6 @@
 
+    %% Fun = fun(A, AccIn) -> {B, AccOut}
+    %% mapfoldl(F, Acc, L) -> {L1, Acc1}
 
      C     G     M
  AB    DEF   HIL   NOP

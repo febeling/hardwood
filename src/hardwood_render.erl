@@ -5,54 +5,50 @@
 -include("hardwood.hrl").
 
 -import(utils, [map_with_index/2]).
--import(lists, [seq/2, append/2, map/2, mapfoldl/3]).
+-import(lists, [seq/2, append/2, map/2, mapfoldl/3, zip/2]).
+-import(string, [join/2]).
 
 %%{Nodes, Edges} = render_digraph(Node, T)
-render_digraph(Tree) ->
+render_digraph(Tree) when is_record(Tree, btree) ->
     Node = Tree#btree.root,
     render_digraph("root_node", Node, 0, [], []).
 
-%% render_edges(Childs) TODO
+corner(1) ->
+    "sw";
+corner(N) when is_integer(N) ->
+    "se".
 
-render_digraph(Name, Node, SeqNum, NodesAcc, EdgesAcc) ->
+field(0) ->
+    "f0";
+field(N) when is_integer(N) ->
+    io_lib:format("f~p", [N-1]).
+
+render_edges(ParentNum, ChildNums) ->
+    F = fun(ChildNum, SibNum) ->
+		{io_lib:format("struct~p:~s:~s -> struct~p:n;", 
+			       [ParentNum, field(SibNum), corner(SibNum), ChildNum]),
+		 SibNum + 1}
+	end,
+    {Edges, _SibNum} = mapfoldl(F, 0, ChildNums),
+    Edges.
+
+render_digraph(Name, Node, SeqNum, NodesAcc, EdgesAcc) when is_list(Name), is_record(Node, node) ->
     NodesAcc1    = [render_node(Name, Node)|NodesAcc],
-%%    ChildSeqNums = seq(SeqNum + 1, SeqNum + length(Node#node.childs)),
-    EdgesAcc1    = [ "edge_todo"
-		    %%render_edges(Node#node.childs)
-		    |EdgesAcc],
-
-    %% mapfoldl(F, Acc, L) -> {L1, Acc1}
-    %% Fun = fun(A, AccIn) -> {B, AccOut}
-
     F = fun(Child, {SeqNum0, NodesAcc0, EdgesAcc0}) ->
-		{SubNodesList, SubEdgesList, SeqNum1} = render_digraph(node_name(Child, SeqNum0), Child, SeqNum0, NodesAcc0, EdgesAcc0),
-		{ok, {SeqNum1 + 1, SubNodesList, SubEdgesList}}
-    end,
-
-    {_ListOfOks, {SeqNumNext, SubNodesList, SubEdgesList}} = mapfoldl(F, {SeqNum, NodesAcc1, EdgesAcc1}, Node#node.childs),
-    {SubNodesList, SubEdgesList, SeqNumNext}.
-    
-%% Join strings in a list together with a given other string
-%% join([string()], string()) -> iolist()
-join(Strings, Separator) ->
-    join(Strings, Separator, []).
-join([H | T], Sep, []) ->
-    join(T, Sep, [H]);
-join([H | T], Sep, Acc) ->
-    join(T, Sep, [H, Sep | Acc]);
-join([], _Sep, Acc) ->
-    lists:reverse(Acc).
+		{SubNodesList, SubEdgesList, SeqNum1} = render_digraph(node_name(SeqNum0), Child, SeqNum0, NodesAcc0, EdgesAcc0),
+		{SeqNum0, {SeqNum1, SubNodesList, SubEdgesList}}
+	end,
+    {ListOfNums, {SeqNumNext, SubNodesList, SubEdgesList}} = mapfoldl(F, {SeqNum + 1, NodesAcc1, EdgesAcc}, Node#node.childs),
+    EdgesAcc1    = render_edges(SeqNum, ListOfNums),
+    {SubNodesList, append(EdgesAcc1,SubEdgesList), SeqNumNext}.
 
 render_node(NodeName, Node) ->
     io_lib:format("~s ~s", [NodeName, render_keys(Node#node.keys)]).
 
-%% node_name(Node, Counter)
-node_name(_Node, SeqNum) ->
+node_name(SeqNum) ->
     io_lib:format("struct~B", [SeqNum]).
 
-%% render_keys(Keys) -> string()
 render_keys(Keys) ->
     Fn = fun(Key, Index) -> io_lib:format("<f~p> ~p", [Index, Key]) end,
     Label = join(map_with_index(Fn, Keys), "|"),
     io_lib:format("[label=\"~s\"]", [Label]).
-
