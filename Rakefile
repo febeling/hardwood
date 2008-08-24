@@ -36,6 +36,11 @@ rule '.beam' => lambda{ |beamfile| find_source(beamfile) } do |t|
   end
 end
 
+task :graph => [:build] do
+  sh "erl -noshell -pa ebin -s hardwood t1 -s init stop"
+  sh "cat hardwood.gv | dot -Tpng -o btree.png && open btree.png"
+end
+
 task :test => OBJ do
   test(OBJ)
 end

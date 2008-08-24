@@ -5,13 +5,10 @@
 -include("hardwood.hrl").
 
 -import(utils, [map_with_index/2]).
--import(lists, [seq/2, append/2, map/2, mapfoldl/3, zip/2]).
+-import(lists, [seq/2, append/2, map/2, mapfoldl/3, zip/2, reverse/1]).
 -import(string, [join/2]).
-
-%%{Nodes, Edges} = render_digraph(Node, T)
-render_digraph(Tree) when is_record(Tree, btree) ->
-    Node = Tree#btree.root,
-    render_digraph("root_node", Node, 0, [], []).
+-import(io_lib, [format/2]).
+-import(io, [fwrite/2]).
 
 corner(1) ->
     "sw";
@@ -26,11 +23,18 @@ field(N) when is_integer(N) ->
 render_edges(ParentNum, ChildNums) ->
     F = fun(ChildNum, SibNum) ->
 		{io_lib:format("struct~p:~s:~s -> struct~p:n;", 
-			       [ParentNum, field(SibNum), corner(SibNum), ChildNum]),
+			       [ParentNum, field(SibNum), corner(SibNum + 1), ChildNum]),
 		 SibNum + 1}
 	end,
     {Edges, _SibNum} = mapfoldl(F, 0, ChildNums),
     Edges.
+
+render_digraph(Tree) when is_record(Tree, btree) ->
+    Node = Tree#btree.root,
+    {Nodes, Edges, _SeqNum} = render_digraph("struct0", Node, 0, [], []),
+    format("digraph btree {~nnode [shape=record];~n~n#nodes~n~s~n~n#edges~n~s~n}~n", 
+	   [join(reverse(Nodes), "\n"),
+	    join(Edges, "\n")]).
 
 render_digraph(Name, Node, SeqNum, NodesAcc, EdgesAcc) when is_list(Name), is_record(Node, node) ->
     NodesAcc1    = [render_node(Name, Node)|NodesAcc],
@@ -49,6 +53,6 @@ node_name(SeqNum) ->
     io_lib:format("struct~B", [SeqNum]).
 
 render_keys(Keys) ->
-    Fn = fun(Key, Index) -> io_lib:format("<f~p> ~p", [Index, Key]) end,
+    Fn = fun(Key, Index) -> io_lib:format("<f~p> ~p", [Index-1, Key]) end,
     Label = join(map_with_index(Fn, Keys), "|"),
     io_lib:format("[label=\"~s\"]", [Label]).
