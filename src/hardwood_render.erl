@@ -33,7 +33,7 @@ render_digraph(Tree) when is_record(Tree, btree) ->
     Node = Tree#btree.root,
     {Nodes, Edges, _SeqNum} = render_digraph("struct0", Node, 0, [], []),
     format("digraph btree {~nnode [shape=record];~n~n#nodes~n~s~n~n#edges~n~s~n}~n", 
-	   [join(reverse(Nodes), "\n"),
+	   [join(Nodes, "\n"),
 	    join(Edges, "\n")]).
 
 render_digraph(Name, Node, SeqNum, NodesAcc, EdgesAcc) when is_list(Name), is_record(Node, node) ->
