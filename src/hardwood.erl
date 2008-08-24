@@ -15,16 +15,16 @@
 %% Tree = delete(Tree, Key)
 
 %% Tree = insert(Tree, Key, Value)
-insert(Tree, Key) ->
+insert(Tree, Key) when is_record(Tree, btree) ->
     NewTree = case is_full(Tree#btree.root, Tree#btree.t) of
 		  true ->
-		      NewRoot = split(#node{}, Tree#btree.root, Tree#btree.t),
+		      {NewRoot,_,_} = split(#node{}, Tree#btree.root, Tree#btree.t),
 		      Tree#btree{root=NewRoot};
 		  false ->
 		      Tree
 	      end,
-    insert_nonfull(NewTree#btree.root, Key, NewTree#btree.t),
-    NewTree.
+    NewNode = insert_nonfull(NewTree#btree.root, Key, NewTree#btree.t),
+    NewTree#btree{root=NewNode}.
 
 %% Tree = create(T)
 create() ->
@@ -35,24 +35,25 @@ create(T) ->
 %% Node operations
 
 %% Node = insert_nonfull(Node, Key, T)
-insert_nonfull(Node, Key, T) ->
+insert_nonfull(Node, Key, T) when is_record(Node, node) ->
     false = is_full(Node, T),
-    case Node#node.leaf of
-	true ->
-	    Keys = Node#node.keys,
-	    {_Index, NewKeys} = insert_sorted(Keys, Key),
-	    Node#node{keys=NewKeys};
-	false ->
-	    Index = child_insert_index(Node#node.keys, Key),
-	    InsertChild = lists:nth(Index, Node#node.childs),
-	    case is_full(InsertChild, T) of
-		true ->
-		    NewNode = split(Node, InsertChild, T),
-		    insert_nonfull(NewNode, Key, T);
-		false ->
-		    insert_nonfull(InsertChild, Key, T)
-	    end
-    end.
+    CurrentNode = case Node#node.leaf of
+		  true ->
+		      Keys = Node#node.keys,
+		      {_Index, NewKeys} = insert_sorted(Keys, Key),
+		      Node#node{keys=NewKeys};
+		  false ->
+		      Index = child_insert_index(Node#node.keys, Key),
+		      InsertChild = lists:nth(Index, Node#node.childs),
+		      case is_full(InsertChild, T) of
+			  true ->
+			      NewNode = split(Node, InsertChild, T),
+			      insert_nonfull(NewNode, Key, T);
+			  false ->
+			      insert_nonfull(InsertChild, Key, T)
+		      end
+	      end,
+    CurrentNode.
 
 child_insert_index(Keys, Key) ->
     child_insert_index(Keys, Key, 1).
@@ -73,7 +74,7 @@ median_index(List) ->
     round(Length / 2).
 
 %% bool() = is_full(Node, T)
-is_full(Node, T) ->
+is_full(Node, T) when is_record(Node, node) ->
     #node{keys = Keys} = Node,
     length(Keys) == 2 * T - 1.
 
@@ -88,19 +89,14 @@ insert_sorted(L, V) ->
 split(P, C, T) ->
     true = is_full(C, T),
     M = median_index(C#node.keys),
-    %% find key to up-move, split keys
     {LowerKeys, [MoveUpKey|UpperKeys]} = lists:split(M-1, C#node.keys),
-
-    %% insert moved-up keys in parent, remember it's index
     {NewPKeyIndex, UpdatedPKeys} = insert_sorted(P#node.keys, MoveUpKey),
     case split_childs(P, NewPKeyIndex - 1) of
-	%% new, empty parent node (root)
-	{LowerParentChilds=[], UpperParentChilds=[]} -> ok;
-	%% update parent node: remove to split node as child before replace
-	%% with 2 new ones
-	{LowerParentChilds, [_Skip|UpperParentChilds]} -> ok
+	{LowerParentChilds=[], UpperParentChilds=[]} -> 
+	    ok;
+	{LowerParentChilds, [_Skip|UpperParentChilds]} -> 
+	    ok
     end,
-    
     SplitIndex = length(LowerKeys),
     {LowerChilds, UpperChilds} = split_childs(C, SplitIndex),
     UpperC = C#node{keys=UpperKeys, childs=UpperChilds},

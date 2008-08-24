@@ -38,7 +38,8 @@ end
 
 task :graph => [:build] do
   sh "erl -noshell -pa ebin -s hardwood t1 -s init stop"
-  sh "cat hardwood.gv | dot -Tpng -o btree.png && open btree.png"
+  sh "cat hardwood.gv | dot -Tpng -o btree.png"
+  sh "open -g btree.png"
 end
 
 task :test => OBJ do

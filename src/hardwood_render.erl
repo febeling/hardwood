@@ -29,6 +29,10 @@ render_edges(ParentNum, ChildNums) ->
     {Edges, _SibNum} = mapfoldl(F, 0, ChildNums),
     Edges.
 
+render_digraph(Tree, Filename) ->
+    DotFormat = hardwood_render:render_digraph(Tree),
+    ok = file:write_file(Filename, list_to_binary(DotFormat)).
+
 render_digraph(Tree) when is_record(Tree, btree) ->
     Node = Tree#btree.root,
     {Nodes, Edges, _SeqNum} = render_digraph("struct0", Node, 0, [], []),
@@ -37,7 +41,7 @@ render_digraph(Tree) when is_record(Tree, btree) ->
 	    join(Edges, "\n")]).
 
 render_digraph(Name, Node, SeqNum, NodesAcc, EdgesAcc) when is_list(Name), is_record(Node, node) ->
-    NodesAcc1    = [render_node(Name, Node)|NodesAcc],
+    NodesAcc1 = [render_node(Name, Node)|NodesAcc],
     F = fun(Child, {SeqNum0, NodesAcc0, EdgesAcc0}) ->
 		{SubNodesList, SubEdgesList, SeqNum1} = render_digraph(node_name(SeqNum0), Child, SeqNum0, NodesAcc0, EdgesAcc0),
 		{SeqNum0, {SeqNum1, SubNodesList, SubEdgesList}}
