@@ -5,6 +5,7 @@
 -import(hardwood, [insert/2, create/0, create/1]).
 -import(hardwood_render, [render_digraph/1, render_digraph/2]).
 -import(io, [fwrite/2]).
+-import(lists, [seq/2, map/2]).
 
 -compile([export_all]).
 
@@ -32,6 +33,14 @@ a() ->
 
 b() ->
     roll([1,9,2,8,3,7,4,6,5]).
+
+c() ->
+    random:seed(0,1,2),
+    Rand = fun(_) ->
+		   random:uniform(100)
+	   end,
+    L = map(Rand, seq(1,20)),
+    roll(L).
 
 basename(Filename) ->
     Dot = string:rchr(Filename, $.),
