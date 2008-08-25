@@ -18,3 +18,8 @@ puts(L) ->
 			ok 
 	      end, 
 	      L).
+%% tests
+
+test() ->
+    %% todo
+    ok.

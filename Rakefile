@@ -48,6 +48,7 @@ end
 
 # helper methods
 
+# print lines from buffer using prefix before each
 def plines(buffer, prefix="  *")
   prefix ||= ""
   buffer.lines.each do |line|
@@ -63,7 +64,6 @@ def test(mods)
     err = stderr.read
     if /badmatch/ =~ out
       plines(out)
-#      plines(err, " **")
       abort "[Tests failed]"
     else
       plines(out)

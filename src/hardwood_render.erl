@@ -60,3 +60,9 @@ render_keys(Keys) ->
     Fn = fun(Key, Index) -> io_lib:format("<f~p> ~p", [Index-1, Key]) end,
     Label = join(map_with_index(Fn, Keys), "|"),
     io_lib:format("[label=\"~s\"]", [Label]).
+
+%% tests
+
+test() ->
+    %% todo
+    ok.

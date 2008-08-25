@@ -38,21 +38,21 @@ create(T) ->
 insert_nonfull(Node, Key, T) when is_record(Node, node) ->
     false = is_full(Node, T),
     CurrentNode = case Node#node.leaf of
-		  true ->
-		      Keys = Node#node.keys,
-		      {_Index, NewKeys} = insert_sorted(Keys, Key),
-		      Node#node{keys=NewKeys};
-		  false ->
-		      Index = child_insert_index(Node#node.keys, Key),
-		      InsertChild = lists:nth(Index, Node#node.childs),
-		      case is_full(InsertChild, T) of
-			  true ->
-			      NewNode = split(Node, InsertChild, T),
-			      insert_nonfull(NewNode, Key, T);
-			  false ->
-			      insert_nonfull(InsertChild, Key, T)
-		      end
-	      end,
+		      true ->
+			  Keys = Node#node.keys,
+			  {_Index, NewKeys} = insert_sorted(Keys, Key),
+			  Node#node{keys=NewKeys};
+		      false ->
+			  Index = child_insert_index(Node#node.keys, Key),
+			  InsertChild = lists:nth(Index, Node#node.childs),
+			  case is_full(InsertChild, T) of
+			      true ->
+				  {NewNode,_,_} = split(Node, InsertChild, T),
+				  insert_nonfull(NewNode, Key, T);
+			      false ->
+				  insert_nonfull(InsertChild, Key, T)
+			  end
+		  end,
     CurrentNode.
 
 child_insert_index(Keys, Key) ->
@@ -85,6 +85,7 @@ insert_sorted(L, V) ->
     Index = length(LowerL),
     {Index, lists:append([LowerL, [V], UpperL])}.
 
+%% Split child C and move one key up into P
 %% PNode = split(PNode, CNode, T)
 split(P, C, T) ->
     true = is_full(C, T),
@@ -108,7 +109,8 @@ split(P, C, T) ->
 		      leaf=false},
     {UpdatedP, LowerC, UpperC}.
 
-split_childs(#node{leaf=false, childs=Childs}=_Node, SplitIndex) ->
+%% Split the childs of an internal node, or do nothing when leaf
+split_childs(#node{leaf=false, childs=Childs}, SplitIndex) ->
     LowerChilds = lists:sublist(Childs, SplitIndex + 1),
     UpperChilds = lists:sublist(Childs, 
 				SplitIndex + 2, 
