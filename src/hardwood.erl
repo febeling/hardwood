@@ -18,11 +18,13 @@
 insert(Tree, Key) when is_record(Tree, btree) ->
     NewTree = case is_full(Tree#btree.root, Tree#btree.t) of
 		  true ->
+		      fwrite("From insert: split~n", []),
 		      {NewRoot,_,_} = split(#node{}, Tree#btree.root, Tree#btree.t),
 		      Tree#btree{root=NewRoot};
 		  false ->
 		      Tree
 	      end,
+    fwrite("new parented tree: ~p~n", [NewTree#btree.root]),
     NewNode = insert_nonfull(NewTree#btree.root, Key, NewTree#btree.t),
     NewTree#btree{root=NewNode}.
 
@@ -37,23 +39,30 @@ create(T) ->
 %% Node = insert_nonfull(Node, Key, T)
 insert_nonfull(Node, Key, T) when is_record(Node, node) ->
     false = is_full(Node, T),
-    CurrentNode = case Node#node.leaf of
-		      true ->
-			  Keys = Node#node.keys,
-			  {_Index, NewKeys} = insert_sorted(Keys, Key),
-			  Node#node{keys=NewKeys};
-		      false ->
-			  Index = child_insert_index(Node#node.keys, Key),
-			  InsertChild = lists:nth(Index, Node#node.childs),
-			  case is_full(InsertChild, T) of
-			      true ->
-				  {NewNode,_,_} = split(Node, InsertChild, T),
-				  insert_nonfull(NewNode, Key, T);
-			      false ->
-				  insert_nonfull(InsertChild, Key, T)
-			  end
-		  end,
-    CurrentNode.
+    R = case Node#node.leaf of
+	    true ->
+		Keys = Node#node.keys,
+		{_Index, NewKeys} = insert_sorted(Keys, Key),
+		Node#node{keys=NewKeys};
+	    false ->
+		Index = child_insert_index(Node#node.keys, Key),
+		InsertChild = lists:nth(Index, Node#node.childs),
+		R2 = case is_full(InsertChild, T) of
+			 true ->
+			     fwrite("From insert_nonfull: split~n", []),
+			     {NewNode,_,_} = split(Node, InsertChild, T),
+			     _ = insert_nonfull(NewNode, Key, T),
+			     NewNode;
+			 false ->
+			     _ = insert_nonfull(InsertChild, Key, T),
+			     Node
+		     end,
+		
+		fwrite("R2: ~p~n", [R2]),
+		R2
+		end,
+    fwrite("R: ~p~n", [R]),
+    R.
 
 child_insert_index(Keys, Key) ->
     child_insert_index(Keys, Key, 1).
@@ -88,16 +97,21 @@ insert_sorted(L, V) ->
 %% Split child C and move one key up into P
 %% PNode = split(PNode, CNode, T)
 split(P, C, T) ->
+    fwrite("**** split: ckeys:~p~n", [C#node.keys]),
     true = is_full(C, T),
     M = median_index(C#node.keys),
     {LowerKeys, [MoveUpKey|UpperKeys]} = lists:split(M-1, C#node.keys),
     {NewPKeyIndex, UpdatedPKeys} = insert_sorted(P#node.keys, MoveUpKey),
+    fwrite("updated p keys: ~p~n", [UpdatedPKeys]),
     case split_childs(P, NewPKeyIndex - 1) of
 	{LowerParentChilds=[], UpperParentChilds=[]} -> 
 	    ok;
 	{LowerParentChilds, [_Skip|UpperParentChilds]} -> 
 	    ok
     end,
+    fwrite("LowerParentChilds:~p~n", [LowerParentChilds]),
+    fwrite("UpperParentsChilds:~p~n", [UpperParentChilds]),
+
     SplitIndex = length(LowerKeys),
     {LowerChilds, UpperChilds} = split_childs(C, SplitIndex),
     UpperC = C#node{keys=UpperKeys, childs=UpperChilds},
@@ -107,6 +121,7 @@ split(P, C, T) ->
 					   [LowerC, UpperC], 
 					   UpperParentChilds]), 
 		      leaf=false},
+    fwrite("updated p: ~p~n", [UpdatedP]),
     {UpdatedP, LowerC, UpperC}.
 
 %% Split the childs of an internal node, or do nothing when leaf
@@ -193,6 +208,18 @@ test_insert_into_node_nonfull() ->
     FullNode = make_node([4, 5, 6]),
     {'EXIT', {{badmatch,true}, _}} = (catch insert_nonfull(FullNode, 9, T)),
     ok.
+
+test_insert_nonfull_recursive() ->
+    T = 2,
+    A = {node,[4],
+	 [{node,[3],[],true},
+	  {node,[7],[],true}],
+	 false},
+    _B = {node,[4],
+	  [{node,[3],[],true},
+	   {node,[6,7],[],true}],
+	  false},
+    {node, [4], _, false} = insert_nonfull(A, 6, T).
 
 test_is_full() ->
     F=#node{keys=[a,b,c]},

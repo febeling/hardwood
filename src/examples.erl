@@ -12,11 +12,12 @@
 %% Fun = fun(Elem, AccIn) -> AccOut
 
 roll(L) ->
+    fwrite("**********************************************~n", []),
     T0 = create(),
     F = fun(E,TreeIn) -> 
 		io:fwrite("inserting ~p~n", [E]),
 		TreeOut = insert(TreeIn, E),
-		fwrite("~p~n", [TreeOut#btree.root]),
+		fwrite("root after insert: ~p~n", [TreeOut#btree.root]),
 		fwrite("~s~n", [render_digraph(TreeOut)]),
 		TreeOut
 	end,
