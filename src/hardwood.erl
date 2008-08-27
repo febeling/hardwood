@@ -49,8 +49,7 @@ insert_nonfull(Node, Key, T) when is_record(Node, node) ->
 		case is_full(InsertChild, T) of
 		    true ->
 			{NewNode2, _, _} = split(Node, InsertChild, T),
-			{NewNode2, nth(child_insert_index(NewNode2#node.keys, Key), 
-				       NewNode2#node.childs)};
+			{NewNode2, nth(child_insert_index(NewNode2#node.keys, Key), NewNode2#node.childs)};
 		    false ->
 			{Node, InsertChild}
 		end,
@@ -99,7 +98,8 @@ split(P, C, T) ->
     {LowerKeys, [MoveUpKey|UpperKeys]} = lists:split(M-1, C#node.keys),
     {NewPKeyIndex, UpdatedPKeys} = insert_sorted(P#node.keys, MoveUpKey),
     case split_childs(P, NewPKeyIndex - 1) of
-	{LowerParentChilds=[], UpperParentChilds=[]} -> 
+	{[]=LowerParentChilds, []=UpperParentChilds} -> 
+	    fwrite("SPLIT EMPTY ~p~n", [NewPKeyIndex]),
 	    ok;
 	{LowerParentChilds, [_Skip|UpperParentChilds]} -> 
 	    ok
@@ -116,6 +116,8 @@ split(P, C, T) ->
     {UpdatedP, LowerC, UpperC}.
 
 %% Split the childs of an internal node, or do nothing when leaf
+split_childs(#node{leaf=false, childs=Childs}, N) when N =< 0->
+    {[], Childs};
 split_childs(#node{leaf=false, childs=Childs}, SplitIndex) ->
     LowerChilds = lists:sublist(Childs, SplitIndex + 1),
     UpperChilds = lists:sublist(Childs, 
@@ -220,10 +222,21 @@ test_split() ->
     ok = test_split_leaf(),
     ok = test_split_node(),
     ok = test_split_under_nonempty_parent(),
+    ok = test_split_first_child_under_nonempty_parent(),
     ok.
 
 test_insert() ->
     ok = test_insert_nonfull_recursive(),
+    ok.
+
+test_split_leaf() ->
+    T = 2,
+    C = #node{keys=[d, e, f], leaf=true},
+    P = #node{keys=[], leaf=true},
+    {P1, LowerChild, UpperChild} = split(P, C, T),
+    {node, [e], [LowerChild, UpperChild], false} = P1, 
+    {node, [d], [], true} = LowerChild,
+    {node, [f], [], true} = UpperChild,
     ok.
 
 test_split_under_nonempty_parent() ->
@@ -238,17 +251,15 @@ test_split_under_nonempty_parent() ->
     {node, [7], [], true} = SplitUpper,
     ok.
 
-test_split_leaf() ->
+test_split_first_child_under_nonempty_parent() ->
     T = 2,
-    %% Case: New root through split
-    C = #node{keys=[d, e, f], leaf=true},
-    %%   new created root
-    P = #node{keys=[], leaf=true},
-    {P1, LowerChild, UpperChild} = split(P, C, T),
-    %%   median key moved up into new node
-    {node, [e], [LowerChild, UpperChild], false} = P1, 
-    {node, [d], [], true} = LowerChild,
-    {node, [f], [], true} = UpperChild,
+    C1 = #node{keys=[2, 4, 6], leaf=true},
+    C2 = #node{keys=[9, 10], leaf=true},
+    P = #node{keys=[7], childs=[C1, C2], leaf=false},
+    {P1, LowerChild, UpperChild} = split(P, C1, T),
+    {node, [4, 7], [LowerChild, UpperChild, C2], false} = P1, 
+    {node, [2], [], true} = LowerChild,
+    {node, [6], [], true} = UpperChild,
     ok.
 
 test_split_node() ->
