@@ -99,7 +99,7 @@ split(P, C, T) ->
     {NewPKeyIndex, UpdatedPKeys} = insert_sorted(P#node.keys, MoveUpKey),
     case split_childs(P, NewPKeyIndex - 1) of
 	{[]=LowerParentChilds, []=UpperParentChilds} -> 
-	    fwrite("SPLIT EMPTY ~p~n", [NewPKeyIndex]),
+	    fwrite("SPLIT EMPTY PARENT ~p~n", [NewPKeyIndex]),
 	    ok;
 	{LowerParentChilds, [_Skip|UpperParentChilds]} -> 
 	    ok
@@ -135,31 +135,31 @@ split_childs(#node{leaf=true}, _SplitIndex) ->
 
 %% helpers
 
-make_node(N) when is_integer(N) ->
+make_leaf(N) when is_integer(N) ->
     #node{keys=[N, N+1], leaf=true};
-make_node(Keys) when is_list(Keys) ->
+make_leaf(Keys) when is_list(Keys) ->
     #node{keys=Keys, leaf=true}.
 
 make_subtree() ->
     #node{keys=[3, 8, 10], 
-	  childs=[make_node(1), 
-		  make_node([4, 5, 7]), 
-		  make_node(9), 
-		  #node{keys=[11,12], leaf=false, childs=make_node(200)}], 
+	  childs=[make_leaf(1), 
+		  make_leaf([4, 5, 7]), 
+		  make_leaf(9), 
+		  #node{keys=[11,12], leaf=false, childs=make_leaf(200)}], 
 	  leaf=false}.
 
 %%                                        16       
 %%       4       8         12                          20          24            28
 %% 1.2.3   5.6.7   9.10.11    13.14.15        17.18.19    21.22.23     25.26.27      29.30.31
 make_tree1() ->
-    C1 = [make_node([1,2,3]),
-	  make_node([5,6,7]),
-	  make_node([9,10,11]),
-	  make_node([13,14,15])],
-    C2 = [make_node([17,18,19]),
-	  make_node([21,22,23]),
-	  make_node([25,26,27]),
-	  make_node([29,30,31])],
+    C1 = [make_leaf([1,2,3]),
+	  make_leaf([5,6,7]),
+	  make_leaf([9,10,11]),
+	  make_leaf([13,14,15])],
+    C2 = [make_leaf([17,18,19]),
+	  make_leaf([21,22,23]),
+	  make_leaf([25,26,27]),
+	  make_leaf([29,30,31])],
     P1 = #node{leaf=false, 
 	       keys=[4,8,12],
 	       childs=C1},
@@ -189,11 +189,11 @@ test_child_insert_index() ->
 test_insert_into_node_nonfull() ->
     T = 2,
     %% main success case
-    NonFullNode = make_node(7),
+    NonFullNode = make_leaf(7),
     UpdatedNode = insert_nonfull(NonFullNode, 9, T),
     #node{keys=[7,8,9], leaf=true} = UpdatedNode,
     %% insert provoking error
-    FullNode = make_node([4, 5, 6]),
+    FullNode = make_leaf([4, 5, 6]),
     {'EXIT', {{badmatch,true}, _}} = (catch insert_nonfull(FullNode, 9, T)),
     ok.
 
@@ -241,7 +241,7 @@ test_split_leaf() ->
 
 test_split_under_nonempty_parent() ->
     T = 2,
-    P = #node{keys=[3, 8], childs=[C1=make_node(1), C2=make_node([4, 5, 7]), C3=make_node(9)], leaf=false},
+    P = #node{keys=[3, 8], childs=[C1=make_leaf(1), C2=make_leaf([4, 5, 7]), C3=make_leaf(9)], leaf=false},
     #node{keys=[1, 2], leaf=true}=C1,
     #node{keys=[4, 5, 7], leaf=true}=C2,
     #node{keys=[9, 10], leaf=true}=C3,
@@ -264,7 +264,7 @@ test_split_first_child_under_nonempty_parent() ->
 
 test_split_node() ->
     T = 2,
-    Grandchilds = [G1=make_node(1), G2=make_node(4), G3=make_node(7), G4=make_node(10)],
+    Grandchilds = [G1=make_leaf(1), G2=make_leaf(4), G3=make_leaf(7), G4=make_leaf(10)],
     C = #node{keys=[3, 6, 9], leaf=false, childs=Grandchilds},
     P = #node{keys=[], leaf=true},
     {P1, LowerChild, UpperChild} = split(P, C, T),
