@@ -2,7 +2,7 @@
 
 -compile([export_all]).
 
--import(lists, [map/2, seq/2, seq/3, nth/2, split/2, append/2]).
+-import(lists, [map/2, seq/2, seq/3, nth/2, split/2, append/1, append/2, sublist/2, sublist/3]).
 -import(utils, [map_with_index/2]).
 -import(io, [fwrite/2]).
 
@@ -95,34 +95,34 @@ insert_sorted(L, V) ->
 split(P, C, T) ->
     true = is_full(C, T),
     M = median_index(C#node.keys),
-    {LowerKeys, [MoveUpKey|UpperKeys]} = lists:split(M-1, C#node.keys),
+    %% find moving-up key of child (index = median)
+    {LowerKeys, [MoveUpKey | UpperKeys]} = split(M-1, C#node.keys),
+    %% insert at parent keys at index
     {NewPKeyIndex, UpdatedPKeys} = insert_sorted(P#node.keys, MoveUpKey),
-    case split_childs(P, NewPKeyIndex - 1) of
-	{[]=LowerParentChilds, []=UpperParentChilds} -> 
-	    fwrite("SPLIT EMPTY PARENT ~p~n", [NewPKeyIndex]),
+    %% split parent childs at 
+    case split_childs(P, NewPKeyIndex) of
+	{[]=LowerParentChilds, []=UpperParentChilds} when length(LowerParentChilds) == 0, length(UpperParentChilds) == 0 -> 
 	    ok;
-	{LowerParentChilds, [_Skip|UpperParentChilds]} -> 
+	{LowerParentChilds, [_ | UpperParentChilds]} -> 
 	    ok
     end,
-    SplitIndex = length(LowerKeys),
-    {LowerChilds, UpperChilds} = split_childs(C, SplitIndex),
+    {LowerChilds, UpperChilds} = split_childs(C, M),
     UpperC = C#node{keys=UpperKeys, childs=UpperChilds},
-    LowerC = C#node{keys=LowerKeys, childs=LowerChilds},
+    LowerC = C#node{keys=LowerKeys, childs=LowerChilds},    
+    C2 = append([LowerParentChilds,  [LowerC, UpperC],  UpperParentChilds]),
     UpdatedP = P#node{keys=UpdatedPKeys, 
-		      childs=lists:append([LowerParentChilds, 
-					   [LowerC, UpperC], 
-					   UpperParentChilds]), 
+		      childs=C2,
 		      leaf=false},
     {UpdatedP, LowerC, UpperC}.
 
 %% Split the childs of an internal node, or do nothing when leaf
-split_childs(#node{leaf=false, childs=Childs}, N) when N =< 0->
-    {[], Childs};
+%% split_childs(#node{leaf=false, childs=Childs}, N) when N =< 0->
+%%     {[], Childs};
 split_childs(#node{leaf=false, childs=Childs}, SplitIndex) ->
-    LowerChilds = lists:sublist(Childs, SplitIndex + 1),
-    UpperChilds = lists:sublist(Childs, 
-				SplitIndex + 2, 
-				SplitIndex + length(Childs) - 1),
+    LowerChilds = sublist(Childs, SplitIndex),
+    UpperChilds = sublist(Childs, 
+			  SplitIndex+1, 
+			  length(Childs)), %% ok to be longer
     {LowerChilds, UpperChilds};
 split_childs(#node{leaf=true}, _SplitIndex) ->
     {[], []}.
@@ -179,6 +179,20 @@ make_tree(Node) ->
 
 %% test cases
 
+%% An internal node gets split, at median index of their keys
+%% array. The childs get split as well and that depends on this same
+%% median index.
+test_split_childs() ->
+    P0 = make_leaf([5, 9, 13]),
+    P = P0#node{leaf=false, childs=[C1 = make_leaf([3]),
+				    C2 = make_leaf([7]),
+				    C3 = make_leaf([11]),
+				    C4 = make_leaf([15])]},
+    {[C1], [C2, C3, C4]} = split_childs(P, 1), %% unused case in btree
+    {[C1, C2], [C3, C4]} = split_childs(P, 2), %% median index
+    {[C1, C2, C3], [C4]} = split_childs(P, 3), %% unsed case in btree
+    ok.
+
 test_child_insert_index() ->
     4 = child_insert_index([2, 4, 6], 7),
     3 = child_insert_index([2, 4, 6], 5),
@@ -191,7 +205,7 @@ test_insert_into_node_nonfull() ->
     %% main success case
     NonFullNode = make_leaf(7),
     UpdatedNode = insert_nonfull(NonFullNode, 9, T),
-    #node{keys=[7,8,9], leaf=true} = UpdatedNode,
+    #node{keys=[7,8,9]} = UpdatedNode,
     %% insert provoking error
     FullNode = make_leaf([4, 5, 6]),
     {'EXIT', {{badmatch,true}, _}} = (catch insert_nonfull(FullNode, 9, T)),
@@ -219,6 +233,7 @@ test_is_full() ->
     ok.
 
 test_split() ->
+    ok = test_split_childs(),
     ok = test_split_leaf(),
     ok = test_split_node(),
     ok = test_split_under_nonempty_parent(),
@@ -231,8 +246,8 @@ test_insert() ->
 
 test_split_leaf() ->
     T = 2,
-    C = #node{keys=[d, e, f], leaf=true},
-    P = #node{keys=[], leaf=true},
+    C = #node{keys=[d, e, f]},
+    P = #node{keys=[]},
     {P1, LowerChild, UpperChild} = split(P, C, T),
     {node, [e], [LowerChild, UpperChild], false} = P1, 
     {node, [d], [], true} = LowerChild,
@@ -242,31 +257,34 @@ test_split_leaf() ->
 test_split_under_nonempty_parent() ->
     T = 2,
     P = #node{keys=[3, 8], childs=[C1=make_leaf(1), C2=make_leaf([4, 5, 7]), C3=make_leaf(9)], leaf=false},
-    #node{keys=[1, 2], leaf=true}=C1,
-    #node{keys=[4, 5, 7], leaf=true}=C2,
-    #node{keys=[9, 10], leaf=true}=C3,
+    #node{keys=[1, 2]} =    C1,
+    #node{keys=[4, 5, 7]} = C2,
+    #node{keys=[9, 10]} =   C3,
     {P1, SplitLow, SplitUpper} = split(P, C2, T),
-    {node, [3, 5, 8], [C1, SplitLow, SplitUpper, C3], false} = P1, 
-    {node, [4], [], true} = SplitLow,
-    {node, [7], [], true} = SplitUpper,
+    %% C1 [1, 2]
+    #node{keys=[4], childs=[], leaf=true} = SplitLow,
+    #node{keys=[7], childs=[], leaf=true} = SplitUpper,
+    %% C3 [9, 10]
+    #node{keys=[3, 5, 8], childs=[C1, SplitLow, SplitUpper, C3], leaf=false} = P1, 
     ok.
 
 test_split_first_child_under_nonempty_parent() ->
     T = 2,
-    C1 = #node{keys=[2, 4, 6], leaf=true},
-    C2 = #node{keys=[9, 10], leaf=true},
+    C1 = #node{keys=[2, 4, 6]},
+    C2 = #node{keys=[9, 10]},
     P = #node{keys=[7], childs=[C1, C2], leaf=false},
     {P1, LowerChild, UpperChild} = split(P, C1, T),
     {node, [4, 7], [LowerChild, UpperChild, C2], false} = P1, 
     {node, [2], [], true} = LowerChild,
     {node, [6], [], true} = UpperChild,
+    %% C2 [9, 10]
     ok.
 
 test_split_node() ->
     T = 2,
     Grandchilds = [G1=make_leaf(1), G2=make_leaf(4), G3=make_leaf(7), G4=make_leaf(10)],
     C = #node{keys=[3, 6, 9], leaf=false, childs=Grandchilds},
-    P = #node{keys=[], leaf=true},
+    P = #node{keys=[]},
     {P1, LowerChild, UpperChild} = split(P, C, T),
     %% the parent node has gained one key (the median) and with two childs
     {node, [6], [LowerChild, UpperChild], false} = P1,
