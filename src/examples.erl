@@ -18,7 +18,7 @@ roll(L) ->
     F = fun(E,{TreeIn, N}) -> 
 		io:fwrite("[~p] inserting ~p~n", [N, E]),
 		TreeOut = insert(TreeIn, E),
-		fwrite("root after insert: ~p~n", [TreeOut#btree.root]),
+		fwrite("root after insert: ~p~n", [TreeOut#tree.root]),
 		fwrite("~s~n", [render_digraph(TreeOut)]),
 		{TreeOut, N+1}
 	end,
