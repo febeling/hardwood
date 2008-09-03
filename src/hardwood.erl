@@ -103,21 +103,18 @@ split_child(P, C, T) ->
 	   childs=C2,
 	   leaf=false}.
 
-update_childs(C, M, Pchilds, _MovedUpKeyIndex) when length(Pchilds) == 0 ->
-    {LowerKeys, [_MoveUpKey | UpperKeys]} = split(M-1, C#node.keys),
-    {LowerChilds, UpperChilds} = split_childs(C#node.childs, M),
-    UpperC = C#node{keys=UpperKeys, childs=UpperChilds},
-    LowerC = C#node{keys=LowerKeys, childs=LowerChilds},
-
-    [LowerC, UpperC];
 update_childs(C, M, Pchilds, MovedUpKeyIndex) ->
     {LowerKeys, [_MoveUpKey | UpperKeys]} = split(M-1, C#node.keys),
     {LowerChilds, UpperChilds} = split_childs(C#node.childs, M),
     UpperC = C#node{keys=UpperKeys, childs=UpperChilds},
     LowerC = C#node{keys=LowerKeys, childs=LowerChilds},    
+    update_pchilds(Pchilds, MovedUpKeyIndex, [LowerC, UpperC]).
 
+update_pchilds(Pchilds, MovedUpKeyIndex, NewChilds) when length(Pchilds) > 0 ->
     {LowerParentChilds, [_Skip | UpperParentChilds]} = split_childs(Pchilds, MovedUpKeyIndex),
-    append([LowerParentChilds,  [LowerC, UpperC],  UpperParentChilds]).
+    append([LowerParentChilds,  NewChilds,  UpperParentChilds]);
+update_pchilds(_Pchilds, _, NewChilds) ->
+    NewChilds.
 
 %% Split the childs list (like the one of an internal node), or do
 %% nothing when leaf
