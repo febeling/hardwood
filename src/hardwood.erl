@@ -15,22 +15,23 @@
 %% Tree = delete(Tree, Key)
 
 %% Tree = insert(Tree, Key, Value)
-insert(Tree, Key) when is_record(Tree, btree) ->
-    NewTree = case is_full(Tree#btree.root, Tree#btree.t) of
+insert(Tree, Key) when is_record(Tree, tree) ->
+    NewTree = case is_full(Tree#tree.root, Tree#tree.t) of
 		  true ->
-		      {NewRoot,_,_} = split(#node{}, Tree#btree.root, Tree#btree.t),
-		      Tree#btree{root=NewRoot};
+		      {NewRoot,_,_} = split(#node{}, Tree#tree.root, Tree#tree.t),
+		      Tree#tree{root=NewRoot};
 		  false ->
 		      Tree
 	      end,
-    NewNode = insert_nonfull(NewTree#btree.root, Key, NewTree#btree.t),
-    NewTree#btree{root=NewNode}.
+    NewNode = insert_nonfull(NewTree#tree.root, Key, NewTree#tree.t),
+    NewTree#tree{root=NewNode}.
 
 %% Tree = create(T)
 create() ->
     create(2).
+
 create(T) ->
-    #btree{t=T}.
+    #tree{t=T}.
 
 %% Node operations
 
@@ -175,7 +176,7 @@ make_tree() ->
     make_tree(make_subtree()).
 
 make_tree(Node) ->
-    #btree{root=Node}.
+    #tree{root=Node}.
 
 %% test cases
 
@@ -308,8 +309,8 @@ test_map_with_index() ->
     ok.
 
 test() ->
-    {btree, _, 2} = create(),
-    {btree, _, 3} = create(3),
+    #tree{t=2} = create(),
+    #tree{t=3} = create(3),
     ok = test_split(),
     ok = test_insert(),
     ok = test_is_full(),

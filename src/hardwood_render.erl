@@ -12,7 +12,7 @@
 
 corner(1) ->
     "sw";
-corner(N) when is_integer(N) ->
+corner(N) when is_integer(N), N > 1 ->
     "se".
 
 field(0) ->
@@ -33,8 +33,8 @@ render_digraph(Tree, Filename) ->
     DotFormat = hardwood_render:render_digraph(Tree),
     ok = file:write_file(Filename, list_to_binary(DotFormat)).
 
-render_digraph(Tree) when is_record(Tree, btree) ->
-    Node = Tree#btree.root,
+render_digraph(Tree) when is_record(Tree, tree) ->
+    Node = Tree#tree.root,
     {Nodes, Edges, _SeqNum} = render_digraph("struct0", Node, 0, [], []),
     format("digraph btree {~nnode [shape=record];~n~n#nodes~n~s~n~n#edges~n~s~n}~n", 
 	   [join(Nodes, "\n"),
