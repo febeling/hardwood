@@ -2,7 +2,7 @@
 
 -compile([export_all]).
 
--import(lists, [map/2, seq/2, seq/3, nth/2, split/2, append/1, append/2, sublist/2, sublist/3]).
+-import(lists, [map/2, seq/2, seq/3, nth/2, split/2, nthtail/2, append/1, append/2, sublist/2, sublist/3]).
 -import(utils, [map_with_index/2]).
 -import(io, [fwrite/2]).
 
@@ -101,13 +101,13 @@ split_child(P, C, T) ->
     %% insert at parent keys at index
     {NewPKeyIndex, UpdatedPKeys} = insert_sorted(P#node.keys, MoveUpKey),
     %% split parent childs at 
-    case split_childs(P, NewPKeyIndex) of
+    case split_childs(P#node.childs, NewPKeyIndex) of
 	{[]=LowerParentChilds, []=UpperParentChilds} when length(LowerParentChilds) == 0, length(UpperParentChilds) == 0 -> 
 	    ok;
 	{LowerParentChilds, [_ | UpperParentChilds]} -> 
 	    ok
     end,
-    {LowerChilds, UpperChilds} = split_childs(C, M),
+    {LowerChilds, UpperChilds} = split_childs(C#node.childs, M),
     UpperC = C#node{keys=UpperKeys, childs=UpperChilds},
     LowerC = C#node{keys=LowerKeys, childs=LowerChilds},    
     C2 = append([LowerParentChilds,  [LowerC, UpperC],  UpperParentChilds]),
@@ -116,15 +116,14 @@ split_child(P, C, T) ->
 		      leaf=false},
     {UpdatedP, LowerC, UpperC}.
 
-%% Split the childs of an internal node, or do nothing when leaf
-split_childs(#node{leaf=false, childs=Childs}, SplitIndex) ->
+%% Split the childs list (like the one of an internal node), or do
+%% nothing when leaf
+split_childs([], _SplitIndex) ->
+    {[], []};
+split_childs(Childs, SplitIndex) when is_list(Childs), is_integer(SplitIndex) ->
     LowerChilds = sublist(Childs, SplitIndex),
-    UpperChilds = sublist(Childs, 
-			  SplitIndex + 1, 
-			  length(Childs)), %% ok to be longer than the rest of childs
-    {LowerChilds, UpperChilds};
-split_childs(#node{leaf=true}, _SplitIndex) ->
-    {[], []}.
+    UpperChilds = nthtail(SplitIndex, Childs), 
+    {LowerChilds, UpperChilds}.
 
 %% Test cases
 
@@ -184,9 +183,9 @@ test_split_childs() ->
 				    C2 = make_leaf([7]),
 				    C3 = make_leaf([11]),
 				    C4 = make_leaf([15])]},
-    {[C1], [C2, C3, C4]} = split_childs(P, 1), %% unused case in btree
-    {[C1, C2], [C3, C4]} = split_childs(P, 2), %% median index
-    {[C1, C2, C3], [C4]} = split_childs(P, 3), %% unsed case in btree
+    {[C1], [C2, C3, C4]} = split_childs(P#node.childs, 1), %% unused case in btree
+    {[C1, C2], [C3, C4]} = split_childs(P#node.childs, 2), %% median index
+    {[C1, C2, C3], [C4]} = split_childs(P#node.childs, 3), %% unsed case in btree
     ok.
 
 test_child_insert_index() ->
