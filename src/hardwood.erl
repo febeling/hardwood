@@ -14,7 +14,7 @@
 %% Tree = delete(Tree, Key)
 
 %% Tree = insert(Tree, Key, Value)
-insert(Tree, Key) when is_record(Tree, tree) ->
+insert(Tree, Key, Value) when is_record(Tree, tree) ->
     NewTree = case is_full(Tree#tree.root, Tree#tree.t) of
 		  true ->
 		      {NewRoot,_,_} = split(#node{}, Tree#tree.root, Tree#tree.t),
@@ -22,7 +22,7 @@ insert(Tree, Key) when is_record(Tree, tree) ->
 		  false ->
 		      Tree
 	      end,
-    NewNode = insert_nonfull(NewTree#tree.root, Key, NewTree#tree.t),
+    NewNode = insert_nonfull(NewTree#tree.root, Key, Value, NewTree#tree.t),
     NewTree#tree{root=NewNode}.
 
 %% Tree = create(T)
@@ -35,12 +35,13 @@ create(T) ->
 %% Node operations
 
 %% Node = insert_nonfull(Node, Key, T)
-insert_nonfull(Node, Key, T) when is_record(Node, node) ->
+insert_nonfull(Node, Key, Value, T) when is_record(Node, node) ->
     false = is_full(Node, T),
     case Node#node.leaf of
 	true ->
 	    Keys = Node#node.keys,
 	    {_Index, NewKeys} = insert_sorted(Keys, Key),
+	    %% TODO insert value
 	    Node#node{keys=NewKeys};
 	false ->
 	    Index = child_insert_index(Node#node.keys, Key),
@@ -53,10 +54,10 @@ insert_nonfull(Node, Key, T) when is_record(Node, node) ->
 		    false ->
 			{Node, InsertChild}
 		end,
-	    UpdatedInsertChild = insert_nonfull(NewInsertChild, Key, T),
+	    UpdatedInsertChild = insert_nonfull(NewInsertChild, Key, Value, T),
 	    Index2 = child_insert_index(NewNode#node.keys, Key),
 	    {Before, [_ReplaceChild|After]} = split(Index2-1, NewNode#node.childs),
-	    NewChilds = append(Before, [UpdatedInsertChild|After]),
+	    NewChilds = append(Before, [UpdatedInsertChild | After]),
 	    NewNode#node{childs=NewChilds}
     end.
 
@@ -88,7 +89,7 @@ insert_sorted(L, V) ->
     Predicate = fun(Element) -> V > Element end,
     {LowerL, UpperL} = lists:splitwith(Predicate, L),
     Index = length(LowerL),
-    {Index, lists:append([LowerL, [V], UpperL])}.
+    {Index, lists:append([LowerL, [V], UpperL])}. %% TODO better using '|'?
 
 %% Split child C and move one key up into P
 %% PNode = split(PNode, CNode, T)
@@ -116,12 +117,10 @@ split(P, C, T) ->
     {UpdatedP, LowerC, UpperC}.
 
 %% Split the childs of an internal node, or do nothing when leaf
-%% split_childs(#node{leaf=false, childs=Childs}, N) when N =< 0->
-%%     {[], Childs};
 split_childs(#node{leaf=false, childs=Childs}, SplitIndex) ->
     LowerChilds = sublist(Childs, SplitIndex),
     UpperChilds = sublist(Childs, 
-			  SplitIndex+1, 
+			  SplitIndex + 1, 
 			  length(Childs)), %% ok to be longer than the rest of childs
     {LowerChilds, UpperChilds};
 split_childs(#node{leaf=true}, _SplitIndex) ->
@@ -129,7 +128,7 @@ split_childs(#node{leaf=true}, _SplitIndex) ->
 
 %% Test cases
 
-%% helpers
+%% Fixtures
 
 make_leaf(N) when is_integer(N) ->
     #node{keys=[N, N+1], leaf=true};
@@ -201,24 +200,24 @@ test_insert_into_node_nonfull() ->
     T = 2,
     %% main success case
     NonFullNode = make_leaf(7),
-    UpdatedNode = insert_nonfull(NonFullNode, 9, T),
+    UpdatedNode = insert_nonfull(NonFullNode, 9, _Value = 0, T),
     #node{keys=[7,8,9]} = UpdatedNode,
     %% insert provoking error
     FullNode = make_leaf([4, 5, 6]),
-    {'EXIT', {{badmatch,true}, _}} = (catch insert_nonfull(FullNode, 9, T)),
+    {'EXIT', {{badmatch,true}, _}} = (catch insert_nonfull(FullNode, 9, _Value = 0, T)),
     ok.
 
 test_insert_nonfull_recursive() ->
     T = 2,
-    A = {node,[4],
-	 [{node,[3],[],true},
-	  {node,[7],[],true}],
-	 false},
-    _B = {node,[4],
-	  [{node,[3],[],true},
-	   {node,[6,7],[],true}],
-	  false},
-    {node, [4], _, false} = insert_nonfull(A, 6, T), 
+    A = #node{keys=[4],
+	      childs=[#node{keys=[3]},
+		      #node{keys=[7]}],
+	      leaf=false},
+    _B = #node{keys=[4],
+	       childs=[#node{keys=[3]},
+		       #node{keys=[6,7]}],
+	       leaf=false},
+    #node{keys=[4], childs=_, leaf=false} = insert_nonfull(A, 6, _Value = 0, T), 
     ok.
 
 test_is_full() ->
@@ -246,9 +245,9 @@ test_split_leaf() ->
     C = #node{keys=[d, e, f]},
     P = #node{keys=[]},
     {P1, LowerChild, UpperChild} = split(P, C, T),
-    {node, [e], [LowerChild, UpperChild], false} = P1, 
-    {node, [d], [], true} = LowerChild,
-    {node, [f], [], true} = UpperChild,
+    #node{keys=[e], childs=[LowerChild, UpperChild], leaf=false} = P1, 
+    #node{keys=[d]} = LowerChild,
+    #node{keys=[f]} = UpperChild,
     ok.
 
 test_split_under_nonempty_parent() ->
@@ -259,8 +258,8 @@ test_split_under_nonempty_parent() ->
     #node{keys=[9, 10]} =   C3,
     {P1, SplitLow, SplitUpper} = split(P, C2, T),
     %% C1 [1, 2]
-    #node{keys=[4], childs=[], leaf=true} = SplitLow,
-    #node{keys=[7], childs=[], leaf=true} = SplitUpper,
+    #node{keys=[4], childs=[]} = SplitLow,
+    #node{keys=[7], childs=[]} = SplitUpper,
     %% C3 [9, 10]
     #node{keys=[3, 5, 8], childs=[C1, SplitLow, SplitUpper, C3], leaf=false} = P1, 
     ok.
@@ -271,9 +270,9 @@ test_split_first_child_under_nonempty_parent() ->
     C2 = #node{keys=[9, 10]},
     P = #node{keys=[7], childs=[C1, C2], leaf=false},
     {P1, LowerChild, UpperChild} = split(P, C1, T),
-    {node, [4, 7], [LowerChild, UpperChild, C2], false} = P1, 
-    {node, [2], [], true} = LowerChild,
-    {node, [6], [], true} = UpperChild,
+    #node{keys=[4, 7], childs=[LowerChild, UpperChild, C2], leaf=false} = P1, 
+    #node{keys=[2]} = LowerChild,
+    #node{keys=[6]} = UpperChild,
     %% C2 [9, 10]
     ok.
 
@@ -284,11 +283,11 @@ test_split_node() ->
     P = #node{keys=[]},
     {P1, LowerChild, UpperChild} = split(P, C, T),
     %% the parent node has gained one key (the median) and with two childs
-    {node, [6], [LowerChild, UpperChild], false} = P1,
+    #node{keys=[6], childs=[LowerChild, UpperChild], leaf=false} = P1,
     %% the left child has the lower keys
-    {node, [3], [G1, G2], false} = LowerChild,
+    #node{keys=[3], childs=[G1, G2], leaf=false} = LowerChild,
     %% the right child has the upper keys
-    {node, [9], [G3, G4], false} = UpperChild,
+    #node{keys=[9], childs=[G3, G4], leaf=false} = UpperChild,
     ok.
 
 test_median_index() ->
