@@ -11,7 +11,7 @@ OBJDIR = 'ebin'
 TMPDIR = "tmp"
 
 OBJ =  SRC.map { |filename| File.join(OBJDIR, File.basename(filename).ext('beam')) }
-CLEAN.include(OBJ, OBJDIR, TMPDIR)
+CLEAN.include(OBJ, OBJDIR, TMPDIR, "erl_crash.dump")
 
 directory TMPDIR
 
