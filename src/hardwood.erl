@@ -86,10 +86,10 @@ is_full(Node, T) when is_record(Node, node) ->
 
 %% {Index, UpdatedL} = insert_sorted(List, Value)
 insert_sorted(L, V) ->
-    Predicate = fun(Element) -> V > Element end,
-    {LowerL, UpperL} = lists:splitwith(Predicate, L),
+    GreaterThanP = fun(Element) -> V > Element end,
+    {LowerL, UpperL} = lists:splitwith(GreaterThanP, L),
     Index = length(LowerL),
-    {Index, lists:append([LowerL, [V], UpperL])}. %% TODO better using '|'?
+    {Index, lists:append(LowerL, [V | UpperL])}.
 
 %% Split child C and move one key up into P
 %% PNode = split(PNode, CNode, T)
