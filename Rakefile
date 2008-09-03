@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'open4'
 require 'rake/clean'
+require "rake/classic_namespace"
 
 include Open4
 
@@ -20,7 +21,7 @@ task :default => [:build]
 
 task :build => OBJ
 
-if ENV["DEBUG"] != ""
+if ENV["DEBUG"]
   puts "Compiling with debug_info (used for coverage as well)"
   debug_flag = "+debug_info"
 else 
