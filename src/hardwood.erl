@@ -96,13 +96,9 @@ insert_sorted(L, V) ->
 split_child(P, C, T) ->
     true = is_full(C, T),
     M = median_index(C#node.keys),
-    %% find moving-up key of child (index = median)
     {_LowerKeys, [MoveUpKey | _UpperKeys]} = split(M-1, C#node.keys),
-    %% insert at parent keys at index
     {NewPKeyIndex, UpdatedPKeys} = insert_sorted(P#node.keys, MoveUpKey),
-
     C2 = update_childs(C, M, P#node.childs, NewPKeyIndex),
-
     P#node{keys=UpdatedPKeys, 
 	   childs=C2,
 	   leaf=false}.
