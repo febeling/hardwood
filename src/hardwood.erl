@@ -10,7 +10,6 @@
 
 %% Tree operations
 
-%% TODO
 %% Value = lookup(Tree, Key)
 %% Tree = delete(Tree, Key)
 
@@ -123,16 +122,12 @@ split_childs(#node{leaf=false, childs=Childs}, SplitIndex) ->
     LowerChilds = sublist(Childs, SplitIndex),
     UpperChilds = sublist(Childs, 
 			  SplitIndex+1, 
-			  length(Childs)), %% ok to be longer
+			  length(Childs)), %% ok to be longer than the rest of childs
     {LowerChilds, UpperChilds};
 split_childs(#node{leaf=true}, _SplitIndex) ->
     {[], []}.
 
 %% Test cases
-%%
-%% TODO
-%% insert into non-leaf node (only for extern insert)
-%% find child to insert into
 
 %% helpers
 
@@ -149,6 +144,7 @@ make_subtree() ->
 		  #node{keys=[11,12], leaf=false, childs=make_leaf(200)}], 
 	  leaf=false}.
 
+%% Fixture tree with this structure:
 %%                                        16       
 %%       4       8         12                          20          24            28
 %% 1.2.3   5.6.7   9.10.11    13.14.15        17.18.19    21.22.23     25.26.27      29.30.31
@@ -178,7 +174,7 @@ make_tree() ->
 make_tree(Node) ->
     #tree{root=Node}.
 
-%% test cases
+%% Test cases
 
 %% An internal node gets split, at median index of their keys
 %% array. The childs get split as well and that depends on this same
