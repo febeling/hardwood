@@ -41,7 +41,6 @@ insert_nonfull(Node, Key, T) when is_record(Node, node) ->
 	true ->
 	    Keys = Node#node.keys,
 	    {_Index, NewKeys} = insert_sorted(Keys, Key),
-	    %% TODO insert value
 	    Node#node{keys=NewKeys};
 	false ->
 	    Index = child_insert_index(Node#node.keys, Key),
