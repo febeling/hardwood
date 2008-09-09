@@ -14,7 +14,7 @@
 %% Tree = delete(Tree, Key)
 
 %% Tree = insert(Tree, Key, Value)
-insert(Tree, Key, Value) when is_record(Tree, tree) ->
+insert(Tree, Key) when is_record(Tree, tree) ->
     NewTree = case is_full(Tree#tree.root, Tree#tree.t) of
 		  true ->
 		      NewRoot = split_child(#node{}, Tree#tree.root, Tree#tree.t),
@@ -22,7 +22,7 @@ insert(Tree, Key, Value) when is_record(Tree, tree) ->
 		  false ->
 		      Tree
 	      end,
-    NewNode = insert_nonfull(NewTree#tree.root, Key, Value, NewTree#tree.t),
+    NewNode = insert_nonfull(NewTree#tree.root, Key, NewTree#tree.t),
     NewTree#tree{root=NewNode}.
 
 %% Tree = create(T)
@@ -35,7 +35,7 @@ create(T) ->
 %% Node operations
 
 %% Node = insert_nonfull(Node, Key, T)
-insert_nonfull(Node, Key, Value, T) when is_record(Node, node) ->
+insert_nonfull(Node, Key, T) when is_record(Node, node) ->
     false = is_full(Node, T),
     case Node#node.leaf of
 	true ->
@@ -54,7 +54,7 @@ insert_nonfull(Node, Key, Value, T) when is_record(Node, node) ->
 		    false ->
 			{Node, InsertChild}
 		end,
-	    UpdatedInsertChild = insert_nonfull(NewInsertChild, Key, Value, T),
+	    UpdatedInsertChild = insert_nonfull(NewInsertChild, Key, T),
 	    Index2 = child_insert_index(NewNode#node.keys, Key),
 	    {Before, [_ReplaceChild|After]} = split(Index2-1, NewNode#node.childs),
 	    NewChilds = append(Before, [UpdatedInsertChild | After]),
@@ -197,11 +197,11 @@ test_insert_into_node_nonfull() ->
     T = 2,
     %% main success case
     NonFullNode = make_leaf(7),
-    UpdatedNode = insert_nonfull(NonFullNode, 9, _Value = 0, T),
+    UpdatedNode = insert_nonfull(NonFullNode, 9,  T),
     #node{keys=[7,8,9]} = UpdatedNode,
     %% insert provoking error
     FullNode = make_leaf([4, 5, 6]),
-    {'EXIT', {{badmatch,true}, _}} = (catch insert_nonfull(FullNode, 9, _Value = 0, T)),
+    {'EXIT', {{badmatch,true}, _}} = (catch insert_nonfull(FullNode, 9, T)),
     ok.
 
 test_insert_nonfull_recursive() ->
@@ -214,7 +214,7 @@ test_insert_nonfull_recursive() ->
 	       childs=[#node{keys=[3]},
 		       #node{keys=[6,7]}],
 	       leaf=false},
-    #node{keys=[4], childs=_, leaf=false} = insert_nonfull(A, 6, _Value = 0, T), 
+    #node{keys=[4], childs=_, leaf=false} = insert_nonfull(A, 6, T), 
     ok.
 
 test_is_full() ->
