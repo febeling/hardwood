@@ -13,7 +13,6 @@
 %% Fun = fun(Elem, AccIn) -> AccOut
 
 roll(L) ->
-    fwrite("**********************************************~n", []),
     T0 = create(),
     F = fun(E,{TreeIn, N}) -> 
 		io:fwrite("[~p] inserting ~p~n", [N, E]),
@@ -51,11 +50,9 @@ b() ->
     roll([1,9,2,8,3,7,4,6,5]).
 
 c() ->
+    N = 300,
     random:seed(0,2,7),
-    Rand = fun(_) ->
-		   random:uniform(100) + 255
-	   end,
-    L = map(Rand, seq(1,20)),
+    L = [random:uniform(100) + 255 || _ <- seq(1, N)],
     roll(L).
 
 basename(Filename) ->
@@ -65,7 +62,7 @@ basename(Filename) ->
 png(Filename) ->
     Basename = basename(Filename),
     os:cmd(io_lib:format("cat ~s | dot -Tpng -o ~s.png", [Filename, Basename])),
-    os:cmd(io_lib:format("open ~s.png", [Basename])).
+    os:cmd(io_lib:format("open -g ~s.png", [Basename])).
 
 test() ->
     %% todo
