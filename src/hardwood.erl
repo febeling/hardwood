@@ -118,7 +118,9 @@ update_pchilds(_Pchilds, _, NewChilds) ->
 %% Split the childs list (like the one of an internal node), or do
 %% nothing when leaf
 split_childs([], _SplitIndex) ->
-    {[], []};
+    %% this is the case of a new parent node, so nothing to split
+    %% there.
+    split(0, []);
 split_childs(Childs, SplitIndex) when is_list(Childs), is_integer(SplitIndex) ->
     split(SplitIndex, Childs).
 
