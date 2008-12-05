@@ -1,7 +1,0 @@
-
-- put a value next to the key
-- implement lookup
-- save to and read from file, using seek
-
-- add delete
-- in-memory create, only then save
